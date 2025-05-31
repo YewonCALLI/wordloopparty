@@ -8,20 +8,19 @@ export default function HomePage() {
   const [started, setStarted] = useState(false);
 
   return (
-    <main className="bg-black text-white ">
+    <main className="bg-black text-white overflow-hidden">
       {!started ? (
-        <div className="flex flex-col items-center justify-center h-screen">
+        <div className="flex flex-col items-center justify-center h-screen cursor-auto">
           <button
             onClick={() => setStarted(true)}
-            className="bg-white text-black px-6 py-3 rounded text-xl shadow-lg hover:scale-105 transition-transform"
+            className="text-white px-6 py-3 rounded text-6xl shadow-lg hover:scale-105 transition-transform blur-[1px]"
           >
-            🔊 파티 시작하기
+            start
           </button>
         </div>
       ) : (
         <>
         <WordLoop />
-        <WordInput />
         </>
       )}
     </main>

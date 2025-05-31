@@ -3,21 +3,19 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/app/lib/supabaseClient'
-import AudioControls from './AudioControls'
-import WordPitchControls from './WordPitchControls'
-import BPMControls from './BPMControls'
 import { useHangulMusicEngine } from '../hooks/useHangulMusicEngine'
 import MatrixWordSection from './MatrixWordSection'
+import ControlPanel from './ControlPanel'
+import WordInput from './WordInput'
 
 export default function WordLoop() {
   const [words, setWords] = useState<string[]>([])
   const [initialWordCount, setInitialWordCount] = useState(0)
-  const [bpm, setBpm] = useState(60)
+  const [bpm, setBpm] = useState(800)
   const [autoAccelerate, setAutoAccelerate] = useState(false)
-  const [currentBpm, setCurrentBpm] = useState(60)
+  const [currentBpm, setCurrentBpm] = useState(800)
   const [wordPitches, setWordPitches] = useState<{[key: string]: number}>({})
   const [musicEnabled, setMusicEnabled] = useState(true)
-  const [ttsEnabled, setTtsEnabled] = useState(true)
   const [masterVolume, setMasterVolume] = useState(0.3)
   const [synthVolume, setSynthVolume] = useState(0.4)
   const [bassVolume, setBassVolume] = useState(0.5)
@@ -52,47 +50,7 @@ export default function WordLoop() {
   }
 
   const speakWord = (word: string, speechRate: number = 0.8, pitch: number = 1.0): Promise<void> => {
-    return new Promise((resolve) => {
-      if (!ttsEnabled || !('speechSynthesis' in window)) {
-        resolve()
-        return
-      }
-
-      const timeoutId = setTimeout(() => {
-        console.log('[⏰ TTS 타임아웃]', word)
-        resolve()
-      }, 3000)
-
-      try {
-        const utterance = new SpeechSynthesisUtterance(word)
-        utterance.lang = 'ko-KR'
-        utterance.rate = speechRate
-        utterance.pitch = pitch
-        utterance.volume = 0.9
-        
-        utterance.onend = () => {
-          clearTimeout(timeoutId)
-          resolve()
-        }
-        
-        utterance.onerror = () => {
-          console.warn('[⚠️ TTS 에러, 건너뜀]', word)
-          clearTimeout(timeoutId)
-          resolve()
-        }
-        
-        if (speechSynthesis.speaking) {
-          speechSynthesis.cancel()
-        }
-        
-        speechSynthesis.speak(utterance)
-        
-      } catch (error) {
-        clearTimeout(timeoutId)
-        console.warn('[⚠️ TTS 실행 실패]', word)
-        resolve()
-      }
-    })
+    return Promise.resolve()
   }
 
   const sleep = (ms: number): Promise<void> => {
@@ -100,11 +58,20 @@ export default function WordLoop() {
   }
 
   const playWordWithMusic = async (word: string, speechRate: number, pitch: number) => {
-    const musicPromise = playMusic(word, pitch)
-    const ttsPromise = ttsEnabled ? speakWord(word, speechRate, pitch) : Promise.resolve()
-    
-    await Promise.all([musicPromise, ttsPromise])
+    await playMusic(word, pitch)
   }
+
+  const handleStartAudio = async () => {
+    await initializeAudio()
+  }
+
+  useEffect(() => {
+    // 컴포넌트가 마운트되면 자동으로 오디오 초기화
+    const initAudio = async () => {
+      await handleStartAudio()
+    }
+    initAudio()
+  }, [])
 
   useEffect(() => {
     const loadInitialWords = async () => {
@@ -257,19 +224,14 @@ export default function WordLoop() {
     
     return () => {
       isMounted = false
-      speechSynthesis.cancel()
     }
-  }, [words, initialWordCount, currentBpm, musicEnabled, ttsEnabled])
-
-  const handleStartAudio = async () => {
-    await initializeAudio()
-  }
+  }, [words, initialWordCount, currentBpm, musicEnabled])
 
   const userWords = words.slice(initialWordCount)
 
   return (
-    <div>
-
+    <div className="relative w-full h-screen">
+      {/* 메인 매트릭스 섹션 */}
       <MatrixWordSection 
         words={words}
         initialWordCount={initialWordCount}
@@ -277,23 +239,15 @@ export default function WordLoop() {
         hasPlayedInitial={hasPlayedInitial.current}
       />
 
-      
-      {!isAudioStarted && (
-        <div className="mb-6 p-6 bg-purple-900 border-2 border-purple-500 rounded-lg text-center">
-          <button
-            onClick={handleStartAudio}
-            className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white text-xl font-bold rounded-lg transition-all animate-pulse"
-          >
-            🔊 음악 시작하기!
-          </button>
-        </div>
-      )}
+      {/* 상단 고정 워드 입력 */}
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <WordInput />
+      </div>
 
-      <AudioControls
+      {/* 토글 가능한 컨트롤 패널 */}
+      <ControlPanel
         musicEnabled={musicEnabled}
         setMusicEnabled={setMusicEnabled}
-        ttsEnabled={ttsEnabled}
-        setTtsEnabled={setTtsEnabled}
         masterVolume={masterVolume}
         setMasterVolume={setMasterVolume}
         synthVolume={synthVolume}
@@ -302,36 +256,22 @@ export default function WordLoop() {
         setBassVolume={setBassVolume}
         drumVolume={drumVolume}
         setDrumVolume={setDrumVolume}
-      />
-
-      <BPMControls
         bpm={bpm}
         setBpm={setBpm}
         currentBpm={currentBpm}
         autoAccelerate={autoAccelerate}
         setAutoAccelerate={setAutoAccelerate}
-        musicEnabled={musicEnabled}
-        ttsEnabled={ttsEnabled}
         bpmToInterval={bpmToInterval}
+        userWords={userWords}
+        wordPitches={wordPitches}
+        getWordPitch={getWordPitch}
+        setWordPitch={setWordPitch}
+        setWordPitches={setWordPitches}
+        isAudioStarted={isAudioStarted}
+        playWordWithMusic={playWordWithMusic}
+        playMusic={playMusic}
+        handleStartAudio={handleStartAudio}
       />
-
-      {userWords.length > 0 && (
-        <div className="mb-6">
-          <WordPitchControls
-            userWords={userWords}
-            wordPitches={wordPitches}
-            getWordPitch={getWordPitch}
-            setWordPitch={setWordPitch}
-            setWordPitches={setWordPitches}
-            isAudioStarted={isAudioStarted}
-            playWordWithMusic={playWordWithMusic}
-            playMusic={playMusic}
-          />
-        </div>
-      )}
-
-      
-
     </div>
   )
 }
