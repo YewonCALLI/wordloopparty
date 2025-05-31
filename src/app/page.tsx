@@ -8,7 +8,7 @@ export default function HomePage() {
   const [started, setStarted] = useState(false);
 
   return (
-    <main className="min-h-screen bg-black text-white p-8">
+    <main className="bg-black text-white ">
       {!started ? (
         <div className="flex flex-col items-center justify-center h-screen">
           <button
@@ -20,8 +20,8 @@ export default function HomePage() {
         </div>
       ) : (
         <>
-          <WordInput />
-          <WordLoop />
+        <WordLoop />
+        <WordInput />
         </>
       )}
     </main>
