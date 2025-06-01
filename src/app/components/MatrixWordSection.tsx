@@ -276,10 +276,7 @@ export default function MatrixWordSection({
               <div className="relative z-20 w-full h-full p-2">
                 <div 
                   className="grid gap-1 w-full h-full content-start"
-                  style={{
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                    gridAutoRows: 'min-content'
-                  }}
+
                 >
                   {group.map((word, wordIdx) => {
                     const index = visibleIdx * Math.ceil(words.length / GROUP_COUNT) + wordIdx
